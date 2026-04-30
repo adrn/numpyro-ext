@@ -305,9 +305,7 @@ class Angle(dist.Distribution):
 
     def sample(self, key, sample_shape=()):
         assert is_prng_key(key)
-        return jax.random.uniform(
-            key, shape=sample_shape, minval=-jnp.pi, maxval=jnp.pi
-        )
+        return jax.random.uniform(key, shape=sample_shape, minval=-jnp.pi, maxval=jnp.pi)
 
     @validate_sample
     def log_prob(self, value):
@@ -461,9 +459,7 @@ class MarginalizedLinear(dist.Distribution):
             self.prior_distribution = prior_distribution.expand(batch_shape)
 
         if data_distribution.event_shape == ():
-            self.data_distribution = data_distribution.expand(
-                batch_shape + (data_size,)
-            )
+            self.data_distribution = data_distribution.expand(batch_shape + (data_size,))
         else:
             self.data_distribution = data_distribution.expand(batch_shape)
 
@@ -542,7 +538,10 @@ class MarginalizedLinear(dist.Distribution):
         # They're probably not the bottleneck, but it is interesting to think
         # about how we could avoid the duplication, since we typically want both
         # distributions for the same `value``.
-        alpha = self._get_alpha(value)
+        # alpha = self._get_alpha(value)
+        alpha = self.data_linear_op.solve_tril(
+            (value - self.data_distribution.mean)[..., None], False
+        )
         alpha = _inner_product(self.projected_design_matrix, alpha)
         a = self.prior_linear_op.loc()[..., None]
         a = self.prior_linear_op.solve_tril(a, False)
